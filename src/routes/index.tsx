@@ -38,17 +38,33 @@ function LexPDF() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [jurisdiccion, setJurisdiccion] = useState<JurisdictionId>(DEFAULT_JURISDICTION);
   const [analisis, setAnalisis] = useState<DocumentAnalysis | null>(null);
+  const [textoDocumento, setTextoDocumento] = useState("");
   const [analizando, setAnalizando] = useState(false);
+  const analizarFn = useServerFn(analizarDocumento);
 
   const analizar = async () => {
     if (!archivo) return;
     setAnalizando(true);
     try {
-      setAnalisis(await mockProvider.analizar(archivo, jurisdiccion));
+      const texto = await extraerTextoPdf(archivo);
+      if (texto.replace(/\[Página \d+\]/g, "").trim().length < 200) {
+        toast.error(
+          "No se pudo extraer texto del PDF. Parece un documento escaneado (solo imágenes).",
+        );
+        return;
+      }
+      setTextoDocumento(texto);
+      const resultado = await analizarFn({
+        data: { archivo: archivo.name, jurisdiccion, texto: recortar(texto) },
+      });
+      setAnalisis(resultado as DocumentAnalysis);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo analizar el documento.");
     } finally {
       setAnalizando(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background">
