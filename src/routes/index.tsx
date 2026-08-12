@@ -109,7 +109,7 @@ function LexPDF() {
           </div>
 
           {analisis ? (
-            <ChatPanel analisis={analisis} />
+            <ChatPanel analisis={analisis} textoDocumento={textoDocumento} />
           ) : (
             <aside className="rounded-2xl border border-dashed border-border bg-card/60 p-6 text-sm text-muted-foreground">
               El chat de consultas se activa al analizar un documento: podrás preguntar sobre su
