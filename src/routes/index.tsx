@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Scale } from "lucide-react";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { UploadPanel } from "@/components/lexpdf/UploadPanel";
 import { AnalysisView } from "@/components/lexpdf/AnalysisView";
 import { ChatPanel } from "@/components/lexpdf/ChatPanel";
 import type { DocumentAnalysis } from "@/lib/analysis-types";
-import { mockProvider } from "@/lib/mock-provider";
+import { analizarDocumento } from "@/lib/ai.functions";
+import { extraerTextoPdf, recortar } from "@/lib/pdf-text";
 import { DEFAULT_JURISDICTION, type JurisdictionId } from "@/lib/jurisdictions";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
