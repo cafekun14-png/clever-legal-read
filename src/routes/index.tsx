@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Scale } from "lucide-react";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { UploadPanel } from "@/components/lexpdf/UploadPanel";
 import { AnalysisView } from "@/components/lexpdf/AnalysisView";
 import { ChatPanel } from "@/components/lexpdf/ChatPanel";
 import type { DocumentAnalysis } from "@/lib/analysis-types";
-import { mockProvider } from "@/lib/mock-provider";
+import { analizarDocumento } from "@/lib/ai.functions";
+import { extraerTextoPdf, recortar } from "@/lib/pdf-text";
 import { DEFAULT_JURISDICTION, type JurisdictionId } from "@/lib/jurisdictions";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,17 +38,33 @@ function LexPDF() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [jurisdiccion, setJurisdiccion] = useState<JurisdictionId>(DEFAULT_JURISDICTION);
   const [analisis, setAnalisis] = useState<DocumentAnalysis | null>(null);
+  const [textoDocumento, setTextoDocumento] = useState("");
   const [analizando, setAnalizando] = useState(false);
+  const analizarFn = useServerFn(analizarDocumento);
 
   const analizar = async () => {
     if (!archivo) return;
     setAnalizando(true);
     try {
-      setAnalisis(await mockProvider.analizar(archivo, jurisdiccion));
+      const texto = await extraerTextoPdf(archivo);
+      if (texto.replace(/\[Página \d+\]/g, "").trim().length < 200) {
+        toast.error(
+          "No se pudo extraer texto del PDF. Parece un documento escaneado (solo imágenes).",
+        );
+        return;
+      }
+      setTextoDocumento(texto);
+      const resultado = await analizarFn({
+        data: { archivo: archivo.name, jurisdiccion, texto: recortar(texto) },
+      });
+      setAnalisis(resultado as DocumentAnalysis);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo analizar el documento.");
     } finally {
       setAnalizando(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +109,7 @@ function LexPDF() {
           </div>
 
           {analisis ? (
-            <ChatPanel analisis={analisis} />
+            <ChatPanel analisis={analisis} textoDocumento={textoDocumento} />
           ) : (
             <aside className="rounded-2xl border border-dashed border-border bg-card/60 p-6 text-sm text-muted-foreground">
               El chat de consultas se activa al analizar un documento: podrás preguntar sobre su
