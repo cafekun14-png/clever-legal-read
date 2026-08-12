@@ -1,21 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MessagesSquare, Send } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatMessage, DocumentAnalysis } from "@/lib/analysis-types";
-import { mockProvider } from "@/lib/mock-provider";
+import { preguntarDocumento } from "@/lib/ai.functions";
+import { recortar } from "@/lib/pdf-text";
 
 const SUGERENCIAS = [
-  "¿Qué procede ante un despido injustificado?",
-  "¿Cuántos días de vacaciones y aguinaldo corresponden?",
-  "¿Cuál es la jornada máxima de trabajo?",
+  "¿De qué trata este documento?",
+  "¿Qué dice sobre el divorcio y los bienes?",
+  "¿Qué obligaciones establece y en qué artículos?",
 ];
 
-export function ChatPanel({ analisis }: { analisis: DocumentAnalysis }) {
+export function ChatPanel({
+  analisis,
+  textoDocumento,
+}: {
+  analisis: DocumentAnalysis;
+  textoDocumento: string;
+}) {
   const [mensajes, setMensajes] = useState<ChatMessage[]>([]);
   const [texto, setTexto] = useState("");
   const [cargando, setCargando] = useState(false);
   const finRef = useRef<HTMLDivElement>(null);
+  const preguntar = useServerFn(preguntarDocumento);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,11 +34,39 @@ export function ChatPanel({ analisis }: { analisis: DocumentAnalysis }) {
     const limpio = pregunta.trim();
     if (!limpio || cargando) return;
     setTexto("");
+    const historial = mensajes.slice(-8).map((m) => ({ rol: m.rol, contenido: m.contenido }));
     setMensajes((m) => [...m, { id: crypto.randomUUID(), rol: "usuario", contenido: limpio }]);
     setCargando(true);
     try {
-      const respuesta = await mockProvider.responder(limpio, analisis);
-      setMensajes((m) => [...m, respuesta]);
+      const r = await preguntar({
+        data: {
+          pregunta: limpio,
+          texto: recortar(textoDocumento),
+          archivo: analisis.archivo,
+          historial,
+        },
+      });
+      setMensajes((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          rol: "asistente",
+          contenido: r.respuesta,
+          citas: r.citas ?? [],
+        },
+      ]);
+    } catch (e) {
+      setMensajes((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          rol: "asistente",
+          contenido:
+            e instanceof Error
+              ? `No pude responder: ${e.message}`
+              : "No pude responder en este momento.",
+        },
+      ]);
     } finally {
       setCargando(false);
     }
@@ -74,11 +111,13 @@ export function ChatPanel({ analisis }: { analisis: DocumentAnalysis }) {
             </div>
           ) : (
             <div key={m.id} className="space-y-2">
-              <p className="text-sm leading-relaxed text-foreground">{m.contenido}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                {m.contenido}
+              </p>
               {m.citas?.map((c, i) => (
                 <blockquote
                   key={i}
-                  className="border-l-2 border-primary bg-secondary px-3 py-2 font-serif text-xs italic leading-relaxed text-muted-foreground"
+                  className="border-l-2 border-primary bg-secondary px-3 py-2 font-serif text-xs leading-relaxed italic text-muted-foreground"
                 >
                   {c}
                 </blockquote>
