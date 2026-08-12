@@ -1,5 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type {
+  ArticuloRelevante,
+  ConceptoClave,
+  EsquemaSeccion,
+} from "./analysis-types";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3.6-flash";
@@ -68,9 +73,9 @@ ${data.texto}
     const raw = await llamarIA(REGLAS, prompt, true);
     const out = parseJson<{
       resumen: { titulo: string; naturaleza: string; puntos: string[] };
-      esquema: unknown[];
-      conceptos: unknown[];
-      articulos: unknown[];
+      esquema: EsquemaSeccion[];
+      conceptos: ConceptoClave[];
+      articulos: ArticuloRelevante[];
     }>(raw);
 
     return {
