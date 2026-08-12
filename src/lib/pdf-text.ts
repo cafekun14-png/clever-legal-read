@@ -18,7 +18,7 @@ export async function extraerTextoPdf(archivo: File): Promise<string> {
       .trim();
     paginas.push(`[Página ${i}]\n${texto}`);
   }
-  await doc.destroy();
+  void doc.cleanup();
   return paginas.join("\n\n").trim();
 }
 
