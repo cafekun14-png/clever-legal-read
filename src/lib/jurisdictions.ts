@@ -41,5 +41,5 @@ export const JURISDICTIONS: Jurisdiction[] = [
 export const DEFAULT_JURISDICTION: JurisdictionId = "mx";
 
 export function getJurisdiction(id: JurisdictionId): Jurisdiction {
-  return JURISDICTIONS.find((j) => j.id === id) ?? JURISDICTIONS[0];
+  return JURISDICTIONS.find((j) => j.id === id) ?? JURISDICTIONS[0]!;
 }

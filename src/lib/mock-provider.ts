@@ -236,7 +236,7 @@ export const mockProvider: AnalysisProvider = {
       rol: "asistente",
       contenido: `Con base en el documento «${analisis.archivo}», el ordenamiento analizado es de orden público e interés social y sus disposiciones mínimas son irrenunciables. No localicé un pasaje que responda de forma literal a tu pregunta; puedes reformularla haciendo referencia a una figura concreta (por ejemplo: despido, jornada, vacaciones, subordinación) para que cite los artículos aplicables.`,
       citas: [
-        `${analisis.esquema[0].articulos[0].identificador}: ${analisis.esquema[0].articulos[0].sintesis}`,
+        `${analisis.esquema[0]!.articulos[0]!.identificador}: ${analisis.esquema[0]!.articulos[0]!.sintesis}`,
       ],
     };
   },
