@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          analisis: Json
+          archivo: string
+          created_at: string
+          id: string
+          jurisdiccion: string
+          texto: string
+          user_id: string
+        }
+        Insert: {
+          analisis: Json
+          archivo: string
+          created_at?: string
+          id?: string
+          jurisdiccion?: string
+          texto?: string
+          user_id: string
+        }
+        Update: {
+          analisis?: Json
+          archivo?: string
+          created_at?: string
+          id?: string
+          jurisdiccion?: string
+          texto?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nombre: string | null
+          plan: Database["public"]["Enums"]["plan_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nombre?: string | null
+          plan?: Database["public"]["Enums"]["plan_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nombre?: string | null
+          plan?: Database["public"]["Enums"]["plan_tipo"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +79,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      plan_tipo: "free" | "premium"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +206,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      plan_tipo: ["free", "premium"],
+    },
   },
 } as const
