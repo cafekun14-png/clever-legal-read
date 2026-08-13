@@ -14,9 +14,9 @@ import { DEFAULT_JURISDICTION, type JurisdictionId } from "@/lib/jurisdictions";
 import { useSesion } from "@/hooks/useSesion";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    doc: typeof search["doc"] === "string" ? (search["doc"] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { doc?: string } =>
+    typeof search["doc"] === "string" ? { doc: search["doc"] as string } : {},
+
   head: () => ({
     meta: [
       { title: "LexPDF — Análisis de documentos jurídicos con IA" },
