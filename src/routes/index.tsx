@@ -1,18 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Scale } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { UploadPanel } from "@/components/lexpdf/UploadPanel";
 import { AnalysisView } from "@/components/lexpdf/AnalysisView";
 import { ChatPanel } from "@/components/lexpdf/ChatPanel";
+import { AppHeader } from "@/components/lexpdf/AppHeader";
 import type { DocumentAnalysis } from "@/lib/analysis-types";
 import { analizarDocumento } from "@/lib/ai.functions";
+import { guardarDocumento, obtenerDocumento } from "@/lib/documents.functions";
 import { extraerTextoPdf, recortar } from "@/lib/pdf-text";
 import { DEFAULT_JURISDICTION, type JurisdictionId } from "@/lib/jurisdictions";
-
+import { useSesion } from "@/hooks/useSesion";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    doc: typeof search["doc"] === "string" ? (search["doc"] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "LexPDF — Análisis de documentos jurídicos con IA" },
@@ -35,12 +39,31 @@ export const Route = createFileRoute("/")({
 });
 
 function LexPDF() {
+  const { doc } = Route.useSearch();
+  const { usuario } = useSesion();
   const [archivo, setArchivo] = useState<File | null>(null);
   const [jurisdiccion, setJurisdiccion] = useState<JurisdictionId>(DEFAULT_JURISDICTION);
   const [analisis, setAnalisis] = useState<DocumentAnalysis | null>(null);
   const [textoDocumento, setTextoDocumento] = useState("");
   const [analizando, setAnalizando] = useState(false);
   const analizarFn = useServerFn(analizarDocumento);
+  const guardarFn = useServerFn(guardarDocumento);
+  const obtenerFn = useServerFn(obtenerDocumento);
+
+  useEffect(() => {
+    if (!doc || !usuario) return;
+    let activo = true;
+    obtenerFn({ data: { id: doc } })
+      .then((fila) => {
+        if (!activo || !fila) return;
+        setAnalisis(fila.analisis as unknown as DocumentAnalysis);
+        setTextoDocumento(fila.texto ?? "");
+      })
+      .catch(() => toast.error("No se pudo abrir el documento del historial."));
+    return () => {
+      activo = false;
+    };
+  }, [doc, usuario, obtenerFn]);
 
   const analizar = async () => {
     if (!archivo) return;
@@ -58,6 +81,22 @@ function LexPDF() {
         data: { archivo: archivo.name, jurisdiccion, texto: recortar(texto) },
       });
       setAnalisis(resultado as DocumentAnalysis);
+
+      if (usuario) {
+        try {
+          await guardarFn({
+            data: {
+              archivo: archivo.name,
+              jurisdiccion,
+              texto: recortar(texto),
+              analisis: resultado,
+            },
+          });
+          toast.success("Documento guardado en tu historial.");
+        } catch {
+          toast.error("El análisis se generó, pero no se pudo guardar en tu historial.");
+        }
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo analizar el documento.");
     } finally {
@@ -65,20 +104,9 @@ function LexPDF() {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-gradient-navy text-navy-foreground">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-4 sm:px-6">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-            <Scale className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="font-serif text-xl leading-none font-semibold">LexPDF</p>
-            <p className="text-xs text-navy-foreground/70">Análisis jurídico asistido por IA</p>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
         <div className="mb-8 max-w-2xl">
@@ -90,6 +118,14 @@ function LexPDF() {
             conceptos jurídicos clave y las disposiciones más relevantes. Pensado para
             estudiantes y profesionales del derecho mexicano.
           </p>
+          {!usuario && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              <Link to="/auth" className="font-medium text-primary hover:underline">
+                Crea tu cuenta o inicia sesión
+              </Link>{" "}
+              para guardar tus análisis y consultarlos después en tu historial.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-start">
