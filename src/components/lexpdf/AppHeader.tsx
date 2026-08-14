@@ -38,6 +38,16 @@ export function AppHeader() {
         <div className="ml-auto flex items-center gap-2 text-sm">
           {cargando ? null : usuario ? (
             <>
+              {estado ? <PlanBadge premium={estado.premium} className="hidden sm:inline-flex" /> : null}
+              {estado?.esAdmin ? (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
+              ) : null}
               <Link
                 to="/historial"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
@@ -48,6 +58,7 @@ export function AppHeader() {
                 to="/cuenta"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
               >
+
                 <UserIcon className="h-4 w-4" />
                 <span className="hidden max-w-[12rem] truncate sm:inline">{usuario.email}</span>
               </Link>
