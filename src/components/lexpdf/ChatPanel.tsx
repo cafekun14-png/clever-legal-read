@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MessagesSquare, Send } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePlan } from "@/hooks/usePlan";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatMessage, DocumentAnalysis } from "@/lib/analysis-types";
@@ -25,6 +27,10 @@ export function ChatPanel({
   const [cargando, setCargando] = useState(false);
   const finRef = useRef<HTMLDivElement>(null);
   const preguntar = useServerFn(preguntarDocumento);
+  const queryClient = useQueryClient();
+  const { data: estado } = usePlan();
+  const sinPreguntas =
+    !!estado && estado.limiteChat !== null && estado.chatsHoy >= estado.limiteChat;
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,6 +75,7 @@ export function ChatPanel({
       ]);
     } finally {
       setCargando(false);
+      void queryClient.invalidateQueries({ queryKey: ["estado-plan"] });
     }
   };
 
@@ -134,6 +141,13 @@ export function ChatPanel({
         <div ref={finRef} />
       </div>
 
+      {sinPreguntas && (
+        <p className="border-t border-border bg-brand-soft px-5 py-3 text-xs text-foreground">
+          Alcanzaste el límite del plan gratuito ({estado?.limiteChat} preguntas por día). Pasa a
+          Premium para preguntar sin límites.
+        </p>
+      )}
+
       <form
         className="flex items-end gap-2 border-t border-border p-4"
         onSubmit={(e) => {
@@ -151,10 +165,13 @@ export function ChatPanel({
             }
           }}
           rows={1}
-          placeholder="Escribe tu pregunta jurídica…"
+          disabled={sinPreguntas}
+          placeholder={
+            sinPreguntas ? "Límite diario alcanzado" : "Escribe tu pregunta jurídica…"
+          }
           className="max-h-32 min-h-11 resize-none"
         />
-        <Button type="submit" size="icon" className="h-11 w-11 shrink-0" disabled={cargando}>
+        <Button type="submit" size="icon" className="h-11 w-11 shrink-0" disabled={cargando || sinPreguntas}>
           <Send className="h-4 w-4" />
         </Button>
       </form>
