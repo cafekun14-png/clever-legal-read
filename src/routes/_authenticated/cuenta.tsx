@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { AppHeader } from "@/components/lexpdf/AppHeader";
-import { obtenerPerfil } from "@/lib/documents.functions";
+import { PlanBadge } from "@/components/lexpdf/PlanBadge";
+import { usePlan } from "@/hooks/usePlan";
+
 
 export const Route = createFileRoute("/_authenticated/cuenta")({
   head: () => ({
