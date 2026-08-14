@@ -85,7 +85,7 @@ export const adminCambiarPlan = createServerFn({ method: "POST" })
     const { data: filas, error } = await supabaseAdmin
       .from("profiles")
       .update({ plan: data.plan, updated_at: new Date().toISOString() })
-      .eq("email", data.email.trim().toLowerCase())
+      .ilike("email", data.email.trim())
       .select("id, email, plan");
     if (error) throw new Error(error.message);
     if (!filas || filas.length === 0) throw new Error("No existe una cuenta con ese correo.");
