@@ -1,13 +1,17 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, LogOut, Scale, User as UserIcon } from "lucide-react";
+import { History, LogOut, Scale, ShieldCheck, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/useSesion";
+import { usePlan } from "@/hooks/usePlan";
+import { PlanBadge } from "./PlanBadge";
 
 export function AppHeader() {
   const { usuario, cargando } = useSesion();
+  const { data: estado } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
 
   const salir = async () => {
     await queryClient.cancelQueries();
