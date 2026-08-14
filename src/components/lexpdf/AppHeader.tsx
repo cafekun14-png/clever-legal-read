@@ -1,13 +1,17 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, LogOut, Scale, User as UserIcon } from "lucide-react";
+import { History, LogOut, Scale, ShieldCheck, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/useSesion";
+import { usePlan } from "@/hooks/usePlan";
+import { PlanBadge } from "./PlanBadge";
 
 export function AppHeader() {
   const { usuario, cargando } = useSesion();
+  const { data: estado } = usePlan();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
 
   const salir = async () => {
     await queryClient.cancelQueries();
@@ -34,6 +38,16 @@ export function AppHeader() {
         <div className="ml-auto flex items-center gap-2 text-sm">
           {cargando ? null : usuario ? (
             <>
+              {estado ? <PlanBadge premium={estado.premium} className="hidden sm:inline-flex" /> : null}
+              {estado?.esAdmin ? (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
+              ) : null}
               <Link
                 to="/historial"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
@@ -44,6 +58,7 @@ export function AppHeader() {
                 to="/cuenta"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 transition-colors hover:bg-white/10"
               >
+
                 <UserIcon className="h-4 w-4" />
                 <span className="hidden max-w-[12rem] truncate sm:inline">{usuario.email}</span>
               </Link>

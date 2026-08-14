@@ -12,6 +12,9 @@ import { guardarDocumento, obtenerDocumento } from "@/lib/documents.functions";
 import { extraerTextoPdf, recortar } from "@/lib/pdf-text";
 import { DEFAULT_JURISDICTION, type JurisdictionId } from "@/lib/jurisdictions";
 import { useSesion } from "@/hooks/useSesion";
+import { usePlan } from "@/hooks/usePlan";
+import { PlanBadge } from "@/components/lexpdf/PlanBadge";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): { doc?: string } =>
@@ -41,6 +44,8 @@ export const Route = createFileRoute("/")({
 function LexPDF() {
   const { doc } = Route.useSearch();
   const { usuario } = useSesion();
+  const { data: estado } = usePlan();
+  const queryClient = useQueryClient();
   const [archivo, setArchivo] = useState<File | null>(null);
   const [jurisdiccion, setJurisdiccion] = useState<JurisdictionId>(DEFAULT_JURISDICTION);
   const [analisis, setAnalisis] = useState<DocumentAnalysis | null>(null);
@@ -65,8 +70,15 @@ function LexPDF() {
     };
   }, [doc, usuario, obtenerFn]);
 
+  const sinPdfs =
+    estado && estado.limitePdf !== null && estado.pdfsHoy >= estado.limitePdf;
+
   const analizar = async () => {
     if (!archivo) return;
+    if (!usuario) {
+      toast.error("Inicia sesión para analizar documentos.");
+      return;
+    }
     setAnalizando(true);
     try {
       const texto = await extraerTextoPdf(archivo);
@@ -101,6 +113,7 @@ function LexPDF() {
       toast.error(e instanceof Error ? e.message : "No se pudo analizar el documento.");
     } finally {
       setAnalizando(false);
+      void queryClient.invalidateQueries({ queryKey: ["estado-plan"] });
     }
   };
 
@@ -123,7 +136,7 @@ function LexPDF() {
               <Link to="/auth" className="font-medium text-primary hover:underline">
                 Crea tu cuenta o inicia sesión
               </Link>{" "}
-              para guardar tus análisis y consultarlos después en tu historial.
+              para analizar documentos y consultarlos después en tu historial.
             </p>
           )}
         </div>
@@ -141,6 +154,34 @@ function LexPDF() {
               onAnalizar={analizar}
               analizando={analizando}
             />
+
+            {usuario && estado && (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                <PlanBadge premium={estado.premium} />
+                {estado.premium ? (
+                  <span className="text-muted-foreground">
+                    Documentos y preguntas ilimitadas.
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Hoy: {estado.pdfsHoy}/{estado.limitePdf} documentos ·{" "}
+                    {estado.chatsHoy}/{estado.limiteChat} preguntas
+                  </span>
+                )}
+                {!estado.premium && (
+                  <Link to="/cuenta" className="ml-auto font-medium text-primary hover:underline">
+                    Pasar a Premium
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {sinPdfs && (
+              <div className="rounded-xl border border-border bg-brand-soft px-4 py-3 text-sm text-foreground">
+                Alcanzaste el límite del plan gratuito ({estado?.limitePdf} documentos por día).
+                Pasa a Premium para analizar PDFs ilimitados.
+              </div>
+            )}
             {analisis && <AnalysisView analisis={analisis} />}
           </div>
 
