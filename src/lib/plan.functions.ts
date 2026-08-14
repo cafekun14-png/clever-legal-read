@@ -9,7 +9,12 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
     const desde = inicioDelDiaISO();
     const [perfil, rol, pdfs, chats] = await Promise.all([
       context.supabase.from("profiles").select("plan, email, nombre").eq("id", context.userId).maybeSingle(),
-      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", context.userId)
+        .eq("role", "admin")
+        .maybeSingle(),
       context.supabase
         .from("usage_events")
         .select("id", { count: "exact", head: true })
@@ -26,7 +31,7 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
     return {
       plan: (perfil.data?.plan ?? "free") as "free" | "premium",
       premium,
-      esAdmin: rol.data === true,
+      esAdmin: rol.data?.role === "admin",
       email: perfil.data?.email ?? null,
       nombre: perfil.data?.nombre ?? null,
       pdfsHoy: pdfs.count ?? 0,
@@ -36,15 +41,27 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
     };
   });
 
+/** Verifica en el servidor si el usuario tiene rol de administrador. */
+async function esAdministrador(
+  supabase: { from: (t: "user_roles") => any },
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  return data?.role === "admin";
+}
+
 /** Solo administradores: lista de usuarios con su plan. */
 export const adminListarUsuarios = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: esAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (esAdmin !== true) throw new Error("No autorizado");
+    if (!(await esAdministrador(context.supabase as never, context.userId))) {
+      throw new Error("No autorizado");
+    }
     const { data, error } = await context.supabase
       .from("profiles")
       .select("id, email, nombre, plan, created_at")
@@ -61,10 +78,15 @@ export const adminCambiarPlan = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), plan: z.enum(["free", "premium"]) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: filas, error } = await context.supabase.rpc("admin_set_plan", {
-      _email: data.email,
-      _plan: data.plan,
-    });
+    if (!(await esAdministrador(context.supabase as never, context.userId))) {
+      throw new Error("No autorizado");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: filas, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ plan: data.plan, updated_at: new Date().toISOString() })
+      .ilike("email", data.email.trim())
+      .select("id, email, plan");
     if (error) throw new Error(error.message);
     if (!filas || filas.length === 0) throw new Error("No existe una cuenta con ese correo.");
     return filas[0]!;
