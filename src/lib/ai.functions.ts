@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumirUso } from "./usage.server";
 import type {
   ArticuloRelevante,
   ConceptoClave,
@@ -54,8 +56,11 @@ const AnalizarInput = z.object({
 });
 
 export const analizarDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalizarInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await consumirUso(context.supabase, context.userId, "pdf");
+
     const prompt = `Analiza el siguiente documento jurídico y devuelve SOLO un objeto JSON con esta forma exacta:
 {
   "resumen": { "titulo": string, "naturaleza": string, "puntos": string[] },
@@ -104,8 +109,11 @@ const PreguntarInput = z.object({
 });
 
 export const preguntarDocumento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => PreguntarInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await consumirUso(context.supabase, context.userId, "chat");
+
     const historial = (data.historial ?? [])
       .map((m) => `${m.rol === "usuario" ? "Usuario" : "Asistente"}: ${m.contenido}`)
       .join("\n");
