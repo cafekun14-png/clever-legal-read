@@ -23,13 +23,8 @@ export const Route = createFileRoute("/_authenticated/cuenta")({
 });
 
 function Cuenta() {
-  const perfilFn = useServerFn(obtenerPerfil);
-  const { data, isLoading } = useQuery({
-    queryKey: ["perfil"],
-    queryFn: () => perfilFn({ data: undefined }),
-  });
-
-  const premium = data?.plan === "premium";
+  const { data, isLoading } = usePlan();
+  const premium = data?.premium === true;
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,28 +48,52 @@ function Cuenta() {
                   <dt className="text-muted-foreground">Correo</dt>
                   <dd className="truncate font-medium text-foreground">{data?.email || "—"}</dd>
                 </div>
-                <div className="flex justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                   <dt className="text-muted-foreground">Plan</dt>
-                  <dd className="font-medium text-foreground">
-                    {premium ? "Premium" : "Gratuito"}
+                  <dd>
+                    <PlanBadge premium={premium} />
                   </dd>
                 </div>
               </dl>
             </div>
 
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-panel">
+              <p className="text-sm font-medium text-foreground">Uso de hoy</p>
+              <dl className="mt-3 space-y-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Documentos analizados</dt>
+                  <dd className="font-medium text-foreground">
+                    {data?.pdfsHoy ?? 0}
+                    {data?.limitePdf ? ` / ${data.limitePdf}` : " · ilimitados"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Preguntas al chat</dt>
+                  <dd className="font-medium text-foreground">
+                    {data?.chatsHoy ?? 0}
+                    {data?.limiteChat ? ` / ${data.limiteChat}` : " · ilimitadas"}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Los límites se reinician cada día a la medianoche (hora del centro de México).
+              </p>
+            </div>
+
             {!premium && (
               <div className="rounded-2xl border border-border bg-brand-soft p-6">
                 <p className="flex items-center gap-2 font-medium text-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" /> Plan Premium
+                  <Sparkles className="h-4 w-4 text-primary" /> Pasa a Premium
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Muy pronto podrás mejorar tu plan para analizar documentos más largos, guardar
-                  más historial y acceder a funciones avanzadas.
+                  Con Premium tendrás documentos y preguntas ilimitadas, además de acceso completo
+                  a tu historial. Los pagos estarán disponibles muy pronto.
                 </p>
               </div>
             )}
           </div>
         )}
+
       </main>
     </div>
   );
