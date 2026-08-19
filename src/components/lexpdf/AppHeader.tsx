@@ -71,12 +71,20 @@ export function AppHeader() {
               </button>
             </>
           ) : (
-            <Link
-              to="/auth"
-              className="rounded-md border border-white/20 px-3 py-2 transition-colors hover:bg-white/10"
-            >
-              Iniciar sesión
-            </Link>
+            <>
+              <Link
+                to="/precios"
+                className="hidden rounded-md px-3 py-2 transition-colors hover:bg-white/10 sm:inline-flex"
+              >
+                Precios
+              </Link>
+              <Link
+                to="/auth"
+                className="rounded-md border border-white/20 px-3 py-2 transition-colors hover:bg-white/10"
+              >
+                Iniciar sesión
+              </Link>
+            </>
           )}
         </div>
       </div>

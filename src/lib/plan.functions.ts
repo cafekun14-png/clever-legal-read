@@ -7,8 +7,12 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const desde = inicioDelDiaISO();
-    const [perfil, rol, pdfs, chats] = await Promise.all([
-      context.supabase.from("profiles").select("plan, email, nombre").eq("id", context.userId).maybeSingle(),
+    const [perfil, rol, pdfs, chats, sub] = await Promise.all([
+      context.supabase
+        .from("profiles")
+        .select("plan, email, nombre, stripe_customer_id")
+        .eq("id", context.userId)
+        .maybeSingle(),
       context.supabase
         .from("user_roles")
         .select("role")
@@ -25,9 +29,17 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
         .select("id", { count: "exact", head: true })
         .eq("tipo", "chat")
         .gte("created_at", desde),
+      context.supabase
+        .from("subscriptions")
+        .select("status, current_period_end, cancel_at_period_end, stripe_customer_id")
+        .eq("user_id", context.userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     const premium = perfil.data?.plan === "premium";
+    const tieneSuscripcion = !!perfil.data?.stripe_customer_id && !!sub.data;
     return {
       plan: (perfil.data?.plan ?? "free") as "free" | "premium",
       premium,
@@ -38,6 +50,10 @@ export const obtenerEstadoPlan = createServerFn({ method: "POST" })
       chatsHoy: chats.count ?? 0,
       limitePdf: premium ? null : LIMITE_PDF_FREE,
       limiteChat: premium ? null : LIMITE_CHAT_FREE,
+      tieneSuscripcion,
+      estadoSuscripcion: sub.data?.status ?? null,
+      periodoFin: sub.data?.current_period_end ?? null,
+      cancelaAlFin: sub.data?.cancel_at_period_end ?? false,
     };
   });
 

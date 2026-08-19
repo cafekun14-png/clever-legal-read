@@ -169,7 +169,7 @@ function LexPDF() {
                   </span>
                 )}
                 {!estado.premium && (
-                  <Link to="/cuenta" className="ml-auto font-medium text-primary hover:underline">
+                  <Link to="/precios" className="ml-auto font-medium text-primary hover:underline">
                     Pasar a Premium
                   </Link>
                 )}
