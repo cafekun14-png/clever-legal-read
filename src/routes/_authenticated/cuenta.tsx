@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2, Sparkles, Crown, CreditCard, Settings2, CheckCircle2 } from "lucide-react";
+import { Loader as Loader2, Sparkles, Crown, CreditCard, Settings2, CircleCheck as CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { AppHeader } from "@/components/lexpdf/AppHeader";
