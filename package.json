@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "postinstall": "node -e \"try{require('@tailwindcss/oxide-linux-x64-musl')}catch(e){try{require('@tailwindcss/oxide-linux-x64-gnu')}catch(e2){}}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -90,6 +91,9 @@
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-linux-x64-musl": "^4.3.3",
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.3",
+    "@tailwindcss/oxide-linux-arm64-musl": "^4.3.3",
+    "@tailwindcss/oxide-linux-arm64-gnu": "^4.3.3",
     "@tailwindcss/oxide-wasm32-wasi": "^4.3.3"
   }
 }
